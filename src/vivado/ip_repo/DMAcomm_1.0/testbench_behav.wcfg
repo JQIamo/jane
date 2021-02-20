@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="testbench_behav.wdb" id="1">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="testbench" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+      <ZoomStartTime time="0fs"></ZoomStartTime>
+      <ZoomEndTime time="654000001fs"></ZoomEndTime>
+      <Cursor1Time time="10000000000fs"></Cursor1Time>
+   </zoom_setting>
+   <column_width_setting>
+      <NameColumnWidth column_width="166"></NameColumnWidth>
+      <ValueColumnWidth column_width="107"></ValueColumnWidth>
+   </column_width_setting>
+   <WVObjectSize size="30" />
+   <wvobject type="logic" fp_name="/testbench/M_AXIS_ACLK">
+      <obj_property name="ElementShortName">M_AXIS_ACLK</obj_property>
+      <obj_property name="ObjectShortName">M_AXIS_ACLK</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/M_AXIS_ARESETN">
+      <obj_property name="ElementShortName">M_AXIS_ARESETN</obj_property>
+      <obj_property name="ObjectShortName">M_AXIS_ARESETN</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/M_AXIS_TVALID">
+      <obj_property name="ElementShortName">M_AXIS_TVALID</obj_property>
+      <obj_property name="ObjectShortName">M_AXIS_TVALID</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/M_AXIS_TDATA">
+      <obj_property name="ElementShortName">M_AXIS_TDATA[31:0]</obj_property>
+      <obj_property name="ObjectShortName">M_AXIS_TDATA[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/M_AXIS_TSTRB">
+      <obj_property name="ElementShortName">M_AXIS_TSTRB[3:0]</obj_property>
+      <obj_property name="ObjectShortName">M_AXIS_TSTRB[3:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/M_AXIS_TLAST">
+      <obj_property name="ElementShortName">M_AXIS_TLAST</obj_property>
+      <obj_property name="ObjectShortName">M_AXIS_TLAST</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/M_AXIS_TREADY">
+      <obj_property name="ElementShortName">M_AXIS_TREADY</obj_property>
+      <obj_property name="ObjectShortName">M_AXIS_TREADY</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/addr_source">
+      <obj_property name="ElementShortName">addr_source[5:0]</obj_property>
+      <obj_property name="ObjectShortName">addr_source[5:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/trigger">
+      <obj_property name="ElementShortName">trigger</obj_property>
+      <obj_property name="ObjectShortName">trigger</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/start_pyncmaster">
+      <obj_property name="ElementShortName">start_pyncmaster</obj_property>
+      <obj_property name="ObjectShortName">start_pyncmaster</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/bram_clk">
+      <obj_property name="ElementShortName">bram_clk</obj_property>
+      <obj_property name="ObjectShortName">bram_clk</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/bram_en">
+      <obj_property name="ElementShortName">bram_en</obj_property>
+      <obj_property name="ObjectShortName">bram_en</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/bram_addr">
+      <obj_property name="ElementShortName">bram_addr[5:0]</obj_property>
+      <obj_property name="ObjectShortName">bram_addr[5:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/bram_din">
+      <obj_property name="ElementShortName">bram_din[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bram_din[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/bram_dout">
+      <obj_property name="ElementShortName">bram_dout[31:0]</obj_property>
+      <obj_property name="ObjectShortName">bram_dout[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/bram_we">
+      <obj_property name="ElementShortName">bram_we[0:0]</obj_property>
+      <obj_property name="ObjectShortName">bram_we[0:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/DATA_TO_WRITE">
+      <obj_property name="ElementShortName">DATA_TO_WRITE[31:0]</obj_property>
+      <obj_property name="ObjectShortName">DATA_TO_WRITE[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/PYNCMASTER_DELAY">
+      <obj_property name="ElementShortName">PYNCMASTER_DELAY[31:0]</obj_property>
+      <obj_property name="ObjectShortName">PYNCMASTER_DELAY[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/INSTRUCTIONS">
+      <obj_property name="ElementShortName">INSTRUCTIONS[31:0]</obj_property>
+      <obj_property name="ObjectShortName">INSTRUCTIONS[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/LOW_BANK_LIMIT">
+      <obj_property name="ElementShortName">LOW_BANK_LIMIT[31:0]</obj_property>
+      <obj_property name="ObjectShortName">LOW_BANK_LIMIT[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/HIGH_BANK_LIMIT">
+      <obj_property name="ElementShortName">HIGH_BANK_LIMIT[31:0]</obj_property>
+      <obj_property name="ObjectShortName">HIGH_BANK_LIMIT[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/BRAM_DEPTH">
+      <obj_property name="ElementShortName">BRAM_DEPTH[31:0]</obj_property>
+      <obj_property name="ObjectShortName">BRAM_DEPTH[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/BRAM_WIDTH">
+      <obj_property name="ElementShortName">BRAM_WIDTH[31:0]</obj_property>
+      <obj_property name="ObjectShortName">BRAM_WIDTH[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/ADDR_MONITOR_WIDTH">
+      <obj_property name="ElementShortName">ADDR_MONITOR_WIDTH[31:0]</obj_property>
+      <obj_property name="ObjectShortName">ADDR_MONITOR_WIDTH[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/C_S_AXIS_TDATA_WIDTH">
+      <obj_property name="ElementShortName">C_S_AXIS_TDATA_WIDTH[31:0]</obj_property>
+      <obj_property name="ObjectShortName">C_S_AXIS_TDATA_WIDTH[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/C_M_AXIS_TDATA_WIDTH">
+      <obj_property name="ElementShortName">C_M_AXIS_TDATA_WIDTH[31:0]</obj_property>
+      <obj_property name="ObjectShortName">C_M_AXIS_TDATA_WIDTH[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/C_M_START_COUNT">
+      <obj_property name="ElementShortName">C_M_START_COUNT[31:0]</obj_property>
+      <obj_property name="ObjectShortName">C_M_START_COUNT[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/my_slave/end_of_stream">
+      <obj_property name="ElementShortName">end_of_stream</obj_property>
+      <obj_property name="ObjectShortName">end_of_stream</obj_property>
+   </wvobject>
+   <wvobject type="logic" fp_name="/testbench/my_slave/word_counter_end">
+      <obj_property name="ElementShortName">word_counter_end</obj_property>
+      <obj_property name="ObjectShortName">word_counter_end</obj_property>
+   </wvobject>
+   <wvobject type="array" fp_name="/testbench/my_slave/word_counter">
+      <obj_property name="ElementShortName">word_counter[31:0]</obj_property>
+      <obj_property name="ObjectShortName">word_counter[31:0]</obj_property>
+   </wvobject>
+</wave_config>

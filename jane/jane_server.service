@@ -1,0 +1,11 @@
+[Unit]
+Description=Start Jane Service at Startup
+Requires=pl_server.service jupyter.service
+After=pl_server.service jupyter.service
+
+[Service]
+Type=simple
+ExecStart=/home/xilinx/jupyter_notebooks/jane/jane_server.sh
+
+[Install]
+WantedBy=basic.target

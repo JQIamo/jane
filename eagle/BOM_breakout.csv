@@ -1,0 +1,11 @@
+"Qty","Value","Device","Parts","Description","PARTNO"
+"1","74S244DW","74S244DW","IC2","Octal BUFFER and LINE DRIVER, 3-state","SN74S244DWR "
+"8","BNC_361V504EFT","BNC edge mount","CON1, CON2, CON3, CON4, CON5, CON6, CON7, CON8","50 Ohm  BNC Threaded Jack.","361V504EFT"
+"8","100nF","capacitor","C1, C2, C3, C4, C6, C7, C8, C9","SMD capacitor 0603","06035C104K4T2A"
+"1","10uF","capacitor","C5","SMD capacitor ","C3225X5R1E106K250AA"
+"1","connector","ML20 ","SV1","Harting rectangular connector 20 positions","302-S201"
+"16","100","resistor","R1, R2, R3, R4, R5, R6, R7, R8, R17, R18, R19, R20, R21, R22, R23, R24","SMD resistor 0603","RK73H1JTTD1000F"
+"8","25","resistor","R9, R10, R11, R12, R13, R14, R15, R16","SMD resistor 0603","RK73H1JTTD24R9F"
+"8","DNP",,"R25, R26, R27, R28, R29, R30, R31, R32","Do not place",
+8,"Jam nut","JAM NUT 0.623'' ","accessory",,"1-329631-2"
+8,"Flat cable 1'","Flat cable","accessory","Flat cable with rectangular connectors","FFSD-10-D-12.00-01-N"
