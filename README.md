@@ -6,7 +6,7 @@
 JQI AutomatioN for Experiments (JANE) is a 64-output channel digital pattern generator/primary clock device for atomic physics experiments. Jane is designed to work with the Labscript Suite of software and is capable of controlling a wide variety of hardware devices, including digital to analog converters (DAC), digital direct synthesizers (DDS), mechanical shutters, and many other commonly used hardware devices.
 
 Jane is comprised of a Microzed-7020 module by Xilinx, along with a carrier board and 8 breakout boards to route all of the 64 digital output lines.
-Further details about the design of this system can be found in our paper. (Link will be provided soon.)
+Further details about the design of this system can be found in our [paper](https://arxiv.org/abs/2102.11230).
 
 ### Description of folders/file organization:
  * box_design: Design using protocase software for box that houses the Microzed module mounted on the carrier board, all 8 breakout boards, and the power supply.
