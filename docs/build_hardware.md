@@ -12,14 +12,14 @@
 
  <p align="center"><img src="images/27_small.jpg" width="400" alt="AC supply board installed"></p>
 
-  * Secure the power entry connector to the associated cutout on the back of the box using #4-40 screws and knuts.
+  * Secure the power entry connector to the associated cutout on the back of the box using #4-40 screws and nuts.
   * Attach the front panel of the box to the main body of the box.
   * Number all of the ribbon connectors on both sides (1-8).
 
  <p align="center"><img src="images/31_small.jpg" width="400" alt="Numbered ribbon connectors and breakout boards"></p>
 
   * Connect ribbon connectors 5-8 to four of the breakout boards.
-  * Mount the four breakout boards onto channels 32-63 of the front panel and secure the BNC on the front side with a knut.
+  * Mount the four breakout boards onto channels 32-63 of the front panel and secure the BNC on the front side with at least two nuts.
   * Connect the other side of the ribbon cables 5-8 to the corresponding carrier board connectors (labeled SV5-SV8).
 
  <p align="center"><img src="images/PCB_bottom_screenshot.png" width="500" alt="Bottom of carrier PCB"></p>
