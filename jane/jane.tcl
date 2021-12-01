@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# DMA_pingpong_engine, byte_to_word_ram_adapter, decoder_wrapper
+# DMA_pingpong_engine, clock_domain_bridge, decoder_wrapper
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -50,7 +50,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-   create_project project_1 myproj -part xc7z020clg400-1
+   create_project project_1 myproj -part xc7z010clg400-1
 }
 
 
@@ -131,17 +131,17 @@ set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:xlconstant:1.1\
-xilinx.com:ip:axi_bram_ctrl:4.1\
 xilinx.com:ip:axi_dma:7.1\
 xilinx.com:ip:axi_intc:4.1\
 xilinx.com:ip:blk_mem_gen:8.4\
 xilinx.com:ip:xlslice:1.0\
+xilinx.com:ip:clk_wiz:6.0\
 user.org:user:register:1.0\
 xilinx.com:ip:processing_system7:5.5\
 xilinx.com:ip:proc_sys_reset:5.0\
-xilinx.com:ip:xlconcat:2.1\
 xilinx.com:ip:smartconnect:1.0\
 xilinx.com:ip:util_vector_logic:2.0\
+xilinx.com:ip:xlconcat:2.1\
 "
 
    set list_ips_missing ""
@@ -168,7 +168,7 @@ set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
 DMA_pingpong_engine\
-byte_to_word_ram_adapter\
+clock_domain_bridge\
 decoder_wrapper\
 "
 
@@ -197,6 +197,179 @@ if { $bCheckIPsPassed != 1 } {
 # DESIGN PROCs
 ##################################################################
 
+
+# Hierarchical cell: Multi_splicer
+proc create_hier_cell_Multi_splicer { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_Multi_splicer() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+
+  # Create pins
+  create_bd_pin -dir I -from 13 -to 0 Din
+  create_bd_pin -dir O -from 0 -to 0 Dout
+  create_bd_pin -dir O -from 0 -to 0 Dout1
+  create_bd_pin -dir O -from 0 -to 0 Dout2
+
+  # Create instance: xlslice_0, and set properties
+  set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {0} \
+   CONFIG.DIN_TO {0} \
+   CONFIG.DIN_WIDTH {15} \
+ ] $xlslice_0
+
+  # Create instance: xlslice_1, and set properties
+  set xlslice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_1 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {2} \
+   CONFIG.DIN_TO {2} \
+   CONFIG.DIN_WIDTH {15} \
+   CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_1
+
+  # Create instance: xlslice_2, and set properties
+  set xlslice_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_2 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {1} \
+   CONFIG.DIN_TO {1} \
+   CONFIG.DIN_WIDTH {15} \
+   CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_2
+
+  # Create port connections
+  connect_bd_net -net decoder_wrapper_0_mem_addr [get_bd_pins Din] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_2/Din]
+  connect_bd_net -net xlslice_0_Dout [get_bd_pins Dout] [get_bd_pins xlslice_0/Dout]
+  connect_bd_net -net xlslice_1_Dout [get_bd_pins Dout2] [get_bd_pins xlslice_1/Dout]
+  connect_bd_net -net xlslice_2_Dout [get_bd_pins Dout1] [get_bd_pins xlslice_2/Dout]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
+# Hierarchical cell: Blocks_for_debug
+proc create_hier_cell_Blocks_for_debug { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_Blocks_for_debug() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+
+  # Create pins
+  create_bd_pin -dir I -from 13 -to 0 Din
+  create_bd_pin -dir I -from 0 -to 0 In0
+  create_bd_pin -dir I -from 0 -to 0 In1
+  create_bd_pin -dir I -from 0 -to 0 In3
+  create_bd_pin -dir I -from 0 -to 0 In4
+  create_bd_pin -dir I -from 0 -to 0 In5
+  create_bd_pin -dir I -from 0 -to 0 In6
+  create_bd_pin -dir I -from 0 -to 0 In7
+  create_bd_pin -dir I -from 63 -to 0 channels
+  create_bd_pin -dir O -from 63 -to 0 channels1
+  create_bd_pin -dir O -from 3 -to 0 run_monitor
+  create_bd_pin -dir I -from 0 -to 0 test
+
+  # Create instance: Multi_splicer
+  create_hier_cell_Multi_splicer $hier_obj Multi_splicer
+
+  # Create instance: run_pin_monitor, and set properties
+  set run_pin_monitor [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 run_pin_monitor ]
+  set_property -dict [ list \
+   CONFIG.IN1_WIDTH {3} \
+ ] $run_pin_monitor
+
+  # Create instance: xlconcat_1, and set properties
+  set xlconcat_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_1 ]
+  set_property -dict [ list \
+   CONFIG.IN11_WIDTH {53} \
+   CONFIG.IN12_WIDTH {52} \
+   CONFIG.NUM_PORTS {12} \
+ ] $xlconcat_1
+
+  # Create instance: xlconstant_4, and set properties
+  set xlconstant_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_4 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {3} \
+   CONFIG.CONST_WIDTH {3} \
+ ] $xlconstant_4
+
+  # Create port connections
+  connect_bd_net -net DMA_pingpong_engine_0_start_pyncmaster [get_bd_pins In4] [get_bd_pins xlconcat_1/In4]
+  connect_bd_net -net DMA_pingpong_engine_0_tready [get_bd_pins In6] [get_bd_pins xlconcat_1/In6]
+  connect_bd_net -net DMA_pingpong_engine_0_tvalid [get_bd_pins In5] [get_bd_pins xlconcat_1/In5]
+  connect_bd_net -net LED_IS_ON_dout [get_bd_pins In3] [get_bd_pins xlconcat_1/In2] [get_bd_pins xlconcat_1/In3]
+  connect_bd_net -net Multii_splicer_Dout1 [get_bd_pins Multi_splicer/Dout1] [get_bd_pins xlconcat_1/In9]
+  connect_bd_net -net clk_wiz_0_clk_out2 [get_bd_pins In1] [get_bd_pins xlconcat_1/In1]
+  connect_bd_net -net decoder_wrapper_0_channels [get_bd_pins channels] [get_bd_pins xlconcat_1/In11]
+  connect_bd_net -net decoder_wrapper_0_mem_addr [get_bd_pins Din] [get_bd_pins Multi_splicer/Din]
+  connect_bd_net -net decoder_wrapper_0_start_monitor [get_bd_pins In7] [get_bd_pins xlconcat_1/In7]
+  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins test] [get_bd_pins xlconcat_1/In0]
+  connect_bd_net -net run_Dout [get_bd_pins In0] [get_bd_pins run_pin_monitor/In0]
+  connect_bd_net -net run_pin_monitor_dout [get_bd_pins run_monitor] [get_bd_pins run_pin_monitor/dout]
+  connect_bd_net -net xlconcat_1_dout [get_bd_pins channels1] [get_bd_pins xlconcat_1/dout]
+  connect_bd_net -net xlconstant_4_dout [get_bd_pins run_pin_monitor/In1] [get_bd_pins xlconstant_4/dout]
+  connect_bd_net -net xlslice_0_Dout [get_bd_pins Multi_splicer/Dout] [get_bd_pins xlconcat_1/In8]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
 
 
 # Procedure to create entire design; Provide argument to make
@@ -244,6 +417,16 @@ proc create_root_design { parentCell } {
   set run_monitor [ create_bd_port -dir O -from 3 -to 0 run_monitor ]
   set test [ create_bd_port -dir O test ]
 
+  # Create instance: Blocks_for_debug
+  create_hier_cell_Blocks_for_debug [current_bd_instance .] Blocks_for_debug
+
+  # Create instance: Clock_reset, and set properties
+  set Clock_reset [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 Clock_reset ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {1} \
+ ] $Clock_reset
+
   # Create instance: DMA_pingpong_engine_0, and set properties
   set block_name DMA_pingpong_engine
   set block_cell_name DMA_pingpong_engine_0
@@ -254,18 +437,18 @@ proc create_root_design { parentCell } {
      catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.ADDR_WIDTH {16} \
+ ] $DMA_pingpong_engine_0
+
   # Create instance: ENABLE, and set properties
   set ENABLE [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 ENABLE ]
   set_property -dict [ list \
    CONFIG.CONST_VAL {0} \
  ] $ENABLE
 
-  # Create instance: Memory_inspector, and set properties
-  set Memory_inspector [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 Memory_inspector ]
-  set_property -dict [ list \
-   CONFIG.SINGLE_PORT_BRAM {1} \
- ] $Memory_inspector
+  # Create instance: LED_IS_ON, and set properties
+  set LED_IS_ON [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 LED_IS_ON ]
 
   # Create instance: PS_to_PL, and set properties
   set PS_to_PL [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_dma:7.1 PS_to_PL ]
@@ -285,35 +468,25 @@ proc create_root_design { parentCell } {
   set blk_mem_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.4 blk_mem_gen_0 ]
   set_property -dict [ list \
    CONFIG.Byte_Size {9} \
-   CONFIG.EN_SAFETY_CKT {true} \
+   CONFIG.EN_SAFETY_CKT {false} \
    CONFIG.Enable_32bit_Address {false} \
+   CONFIG.Enable_A {Always_Enabled} \
    CONFIG.Enable_B {Use_ENB_Pin} \
    CONFIG.Memory_Type {True_Dual_Port_RAM} \
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
    CONFIG.Port_B_Write_Rate {50} \
+   CONFIG.Read_Width_A {128} \
+   CONFIG.Read_Width_B {32} \
    CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
    CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
    CONFIG.Use_Byte_Write_Enable {false} \
-   CONFIG.Use_RSTA_Pin {true} \
-   CONFIG.Write_Depth_A {131072} \
+   CONFIG.Use_RSTA_Pin {false} \
+   CONFIG.Write_Depth_A {16384} \
+   CONFIG.Write_Width_A {128} \
+   CONFIG.Write_Width_B {32} \
    CONFIG.use_bram_block {Stand_Alone} \
  ] $blk_mem_gen_0
-
-  # Create instance: byte_to_word_ram_ada_0, and set properties
-  set block_name byte_to_word_ram_adapter
-  set block_cell_name byte_to_word_ram_ada_0
-  if { [catch {set byte_to_word_ram_ada_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $byte_to_word_ram_ada_0 eq "" } {
-     catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-    set_property -dict [ list \
-   CONFIG.BRAM_DEPTH {131072} \
-   CONFIG.WE_SIZE {4} \
- ] $byte_to_word_ram_ada_0
 
   # Create instance: clk_pin, and set properties
   set clk_pin [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 clk_pin ]
@@ -323,6 +496,75 @@ proc create_root_design { parentCell } {
    CONFIG.DIN_WIDTH {7} \
    CONFIG.DOUT_WIDTH {1} \
  ] $clk_pin
+
+  # Create instance: clk_wiz_0, and set properties
+  set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_0 ]
+  set_property -dict [ list \
+   CONFIG.CLKIN1_JITTER_PS {149.99} \
+   CONFIG.CLKOUT1_DRIVES {BUFG} \
+   CONFIG.CLKOUT1_JITTER {195.510} \
+   CONFIG.CLKOUT1_PHASE_ERROR {556.012} \
+   CONFIG.CLKOUT1_REQUESTED_DUTY_CYCLE {50.0} \
+   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {100} \
+   CONFIG.CLKOUT1_REQUESTED_PHASE {0} \
+   CONFIG.CLKOUT1_USED {true} \
+   CONFIG.CLKOUT2_DRIVES {BUFG} \
+   CONFIG.CLKOUT2_JITTER {194.606} \
+   CONFIG.CLKOUT2_PHASE_ERROR {556.012} \
+   CONFIG.CLKOUT2_REQUESTED_DUTY_CYCLE {50.0} \
+   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {100} \
+   CONFIG.CLKOUT2_REQUESTED_PHASE {0.000} \
+   CONFIG.CLKOUT2_USED {true} \
+   CONFIG.CLKOUT3_DRIVES {BUFG} \
+   CONFIG.CLKOUT3_JITTER {134.317} \
+   CONFIG.CLKOUT3_PHASE_ERROR {556.012} \
+   CONFIG.CLKOUT3_REQUESTED_DUTY_CYCLE {50.0} \
+   CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {100.000} \
+   CONFIG.CLKOUT3_USED {true} \
+   CONFIG.CLKOUT4_DRIVES {BUFG} \
+   CONFIG.CLKOUT4_JITTER {134.317} \
+   CONFIG.CLKOUT4_PHASE_ERROR {556.012} \
+   CONFIG.CLKOUT4_REQUESTED_DUTY_CYCLE {50.0} \
+   CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {100.000} \
+   CONFIG.CLKOUT4_USED {true} \
+   CONFIG.CLKOUT5_DRIVES {BUFG} \
+   CONFIG.CLKOUT5_REQUESTED_OUT_FREQ {100.000} \
+   CONFIG.CLKOUT6_DRIVES {BUFG} \
+   CONFIG.CLKOUT6_REQUESTED_OUT_FREQ {100.000} \
+   CONFIG.CLKOUT7_DRIVES {BUFG} \
+   CONFIG.CLKOUT7_REQUESTED_OUT_FREQ {100.000} \
+   CONFIG.ENABLE_CLOCK_MONITOR {false} \
+   CONFIG.JITTER_SEL {Min_O_Jitter} \
+   CONFIG.MMCM_BANDWIDTH {LOW} \
+   CONFIG.MMCM_CLKFBOUT_MULT_F {28.000} \
+   CONFIG.MMCM_CLKIN1_PERIOD {15.000} \
+   CONFIG.MMCM_CLKIN2_PERIOD {10.0} \
+   CONFIG.MMCM_CLKOUT0_DIVIDE_F {9.250} \
+   CONFIG.MMCM_CLKOUT0_PHASE {0.000} \
+   CONFIG.MMCM_CLKOUT1_DIVIDE {9} \
+   CONFIG.MMCM_CLKOUT1_PHASE {0.000} \
+   CONFIG.MMCM_DIVCLK_DIVIDE {2} \
+   CONFIG.NUM_OUT_CLKS {4} \
+   CONFIG.PRIMITIVE {MMCM} \
+   CONFIG.SECONDARY_SOURCE {Single_ended_clock_capable_pin} \
+   CONFIG.USE_FREQ_SYNTH {true} \
+   CONFIG.USE_PHASE_ALIGNMENT {false} \
+   CONFIG.USE_SPREAD_SPECTRUM {true} \
+ ] $clk_wiz_0
+
+  # Create instance: clock_domain_bridge_0, and set properties
+  set block_name clock_domain_bridge
+  set block_cell_name clock_domain_bridge_0
+  if { [catch {set clock_domain_bridge_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_msg_id "BD_TCL-105" "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $clock_domain_bridge_0 eq "" } {
+     catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.DATA_WIDTH {14} \
+ ] $clock_domain_bridge_0
 
   # Create instance: decoder_wrapper_0, and set properties
   set block_name decoder_wrapper
@@ -334,24 +576,27 @@ proc create_root_design { parentCell } {
      catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.ADDR_SIZE {14} \
+ ] $decoder_wrapper_0
+
   # Create instance: num_words, and set properties
   set num_words [ create_bd_cell -type ip -vlnv user.org:user:register:1.0 num_words ]
 
   # Create instance: processing_system7_0, and set properties
   set processing_system7_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0 ]
   set_property -dict [ list \
-   CONFIG.PCW_ACT_APU_PERIPHERAL_FREQMHZ {666.666687} \
+   CONFIG.PCW_ACT_APU_PERIPHERAL_FREQMHZ {66.666672} \
    CONFIG.PCW_ACT_CAN0_PERIPHERAL_FREQMHZ {23.8095} \
    CONFIG.PCW_ACT_CAN1_PERIPHERAL_FREQMHZ {23.8095} \
    CONFIG.PCW_ACT_CAN_PERIPHERAL_FREQMHZ {10.000000} \
    CONFIG.PCW_ACT_DCI_PERIPHERAL_FREQMHZ {10.158730} \
    CONFIG.PCW_ACT_ENET0_PERIPHERAL_FREQMHZ {125.000000} \
    CONFIG.PCW_ACT_ENET1_PERIPHERAL_FREQMHZ {10.000000} \
-   CONFIG.PCW_ACT_FPGA0_PERIPHERAL_FREQMHZ {102.564102} \
+   CONFIG.PCW_ACT_FPGA0_PERIPHERAL_FREQMHZ {66.666672} \
    CONFIG.PCW_ACT_FPGA1_PERIPHERAL_FREQMHZ {33.333336} \
-   CONFIG.PCW_ACT_FPGA2_PERIPHERAL_FREQMHZ {102.564102} \
-   CONFIG.PCW_ACT_FPGA3_PERIPHERAL_FREQMHZ {49.382717} \
+   CONFIG.PCW_ACT_FPGA2_PERIPHERAL_FREQMHZ {100.000000} \
+   CONFIG.PCW_ACT_FPGA3_PERIPHERAL_FREQMHZ {50.000000} \
    CONFIG.PCW_ACT_I2C_PERIPHERAL_FREQMHZ {50} \
    CONFIG.PCW_ACT_PCAP_PERIPHERAL_FREQMHZ {200.000000} \
    CONFIG.PCW_ACT_QSPI_PERIPHERAL_FREQMHZ {200.000000} \
@@ -359,20 +604,20 @@ proc create_root_design { parentCell } {
    CONFIG.PCW_ACT_SMC_PERIPHERAL_FREQMHZ {10.000000} \
    CONFIG.PCW_ACT_SPI_PERIPHERAL_FREQMHZ {10.000000} \
    CONFIG.PCW_ACT_TPIU_PERIPHERAL_FREQMHZ {200.000000} \
-   CONFIG.PCW_ACT_TTC0_CLK0_PERIPHERAL_FREQMHZ {111.111115} \
-   CONFIG.PCW_ACT_TTC0_CLK1_PERIPHERAL_FREQMHZ {111.111115} \
-   CONFIG.PCW_ACT_TTC0_CLK2_PERIPHERAL_FREQMHZ {111.111115} \
-   CONFIG.PCW_ACT_TTC1_CLK0_PERIPHERAL_FREQMHZ {111.111115} \
-   CONFIG.PCW_ACT_TTC1_CLK1_PERIPHERAL_FREQMHZ {111.111115} \
-   CONFIG.PCW_ACT_TTC1_CLK2_PERIPHERAL_FREQMHZ {111.111115} \
+   CONFIG.PCW_ACT_TTC0_CLK0_PERIPHERAL_FREQMHZ {11.111111} \
+   CONFIG.PCW_ACT_TTC0_CLK1_PERIPHERAL_FREQMHZ {11.111111} \
+   CONFIG.PCW_ACT_TTC0_CLK2_PERIPHERAL_FREQMHZ {11.111111} \
+   CONFIG.PCW_ACT_TTC1_CLK0_PERIPHERAL_FREQMHZ {11.111111} \
+   CONFIG.PCW_ACT_TTC1_CLK1_PERIPHERAL_FREQMHZ {11.111111} \
+   CONFIG.PCW_ACT_TTC1_CLK2_PERIPHERAL_FREQMHZ {11.111111} \
    CONFIG.PCW_ACT_TTC_PERIPHERAL_FREQMHZ {50} \
    CONFIG.PCW_ACT_UART_PERIPHERAL_FREQMHZ {50.000000} \
    CONFIG.PCW_ACT_USB0_PERIPHERAL_FREQMHZ {60} \
    CONFIG.PCW_ACT_USB1_PERIPHERAL_FREQMHZ {60} \
-   CONFIG.PCW_ACT_WDT_PERIPHERAL_FREQMHZ {111.111115} \
+   CONFIG.PCW_ACT_WDT_PERIPHERAL_FREQMHZ {11.111111} \
    CONFIG.PCW_APU_CLK_RATIO_ENABLE {6:2:1} \
-   CONFIG.PCW_APU_PERIPHERAL_FREQMHZ {667} \
-   CONFIG.PCW_ARMPLL_CTRL_FBDIV {40} \
+   CONFIG.PCW_APU_PERIPHERAL_FREQMHZ {66.7} \
+   CONFIG.PCW_ARMPLL_CTRL_FBDIV {48} \
    CONFIG.PCW_CAN0_BASEADDR {0xE0008000} \
    CONFIG.PCW_CAN0_CAN0_IO {<Select>} \
    CONFIG.PCW_CAN0_GRP_CLK_ENABLE {0} \
@@ -394,18 +639,18 @@ proc create_root_design { parentCell } {
    CONFIG.PCW_CAN_PERIPHERAL_DIVISOR1 {1} \
    CONFIG.PCW_CAN_PERIPHERAL_FREQMHZ {100} \
    CONFIG.PCW_CAN_PERIPHERAL_VALID {0} \
-   CONFIG.PCW_CLK0_FREQ {102564102} \
+   CONFIG.PCW_CLK0_FREQ {66666672} \
    CONFIG.PCW_CLK1_FREQ {33333336} \
-   CONFIG.PCW_CLK2_FREQ {102564102} \
-   CONFIG.PCW_CLK3_FREQ {49382717} \
+   CONFIG.PCW_CLK2_FREQ {100000000} \
+   CONFIG.PCW_CLK3_FREQ {50000000} \
    CONFIG.PCW_CORE0_FIQ_INTR {0} \
    CONFIG.PCW_CORE0_IRQ_INTR {0} \
    CONFIG.PCW_CORE1_FIQ_INTR {0} \
    CONFIG.PCW_CORE1_IRQ_INTR {0} \
    CONFIG.PCW_CPU_CPU_6X4X_MAX_RANGE {667} \
-   CONFIG.PCW_CPU_CPU_PLL_FREQMHZ {1333.333} \
+   CONFIG.PCW_CPU_CPU_PLL_FREQMHZ {1600.000} \
    CONFIG.PCW_CPU_PERIPHERAL_CLKSRC {ARM PLL} \
-   CONFIG.PCW_CPU_PERIPHERAL_DIVISOR0 {2} \
+   CONFIG.PCW_CPU_PERIPHERAL_DIVISOR0 {24} \
    CONFIG.PCW_CRYSTAL_PERIPHERAL_FREQMHZ {33.333333} \
    CONFIG.PCW_DCI_PERIPHERAL_CLKSRC {DDR PLL} \
    CONFIG.PCW_DCI_PERIPHERAL_DIVISOR0 {15} \
@@ -528,23 +773,23 @@ proc create_root_design { parentCell } {
    CONFIG.PCW_EN_USB0 {1} \
    CONFIG.PCW_EN_USB1 {0} \
    CONFIG.PCW_EN_WDT {0} \
-   CONFIG.PCW_FCLK0_PERIPHERAL_CLKSRC {ARM PLL} \
-   CONFIG.PCW_FCLK0_PERIPHERAL_DIVISOR0 {13} \
-   CONFIG.PCW_FCLK0_PERIPHERAL_DIVISOR1 {1} \
+   CONFIG.PCW_FCLK0_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_FCLK0_PERIPHERAL_DIVISOR0 {5} \
+   CONFIG.PCW_FCLK0_PERIPHERAL_DIVISOR1 {3} \
    CONFIG.PCW_FCLK1_PERIPHERAL_CLKSRC {ARM PLL} \
-   CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR0 {40} \
+   CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR0 {48} \
    CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR1 {1} \
    CONFIG.PCW_FCLK2_PERIPHERAL_CLKSRC {ARM PLL} \
-   CONFIG.PCW_FCLK2_PERIPHERAL_DIVISOR0 {13} \
-   CONFIG.PCW_FCLK2_PERIPHERAL_DIVISOR1 {1} \
+   CONFIG.PCW_FCLK2_PERIPHERAL_DIVISOR0 {4} \
+   CONFIG.PCW_FCLK2_PERIPHERAL_DIVISOR1 {4} \
    CONFIG.PCW_FCLK3_PERIPHERAL_CLKSRC {ARM PLL} \
-   CONFIG.PCW_FCLK3_PERIPHERAL_DIVISOR0 {27} \
-   CONFIG.PCW_FCLK3_PERIPHERAL_DIVISOR1 {1} \
+   CONFIG.PCW_FCLK3_PERIPHERAL_DIVISOR0 {8} \
+   CONFIG.PCW_FCLK3_PERIPHERAL_DIVISOR1 {4} \
    CONFIG.PCW_FCLK_CLK0_BUF {TRUE} \
    CONFIG.PCW_FCLK_CLK1_BUF {TRUE} \
    CONFIG.PCW_FCLK_CLK2_BUF {TRUE} \
    CONFIG.PCW_FCLK_CLK3_BUF {TRUE} \
-   CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {100} \
+   CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {66.66} \
    CONFIG.PCW_FPGA1_PERIPHERAL_FREQMHZ {33} \
    CONFIG.PCW_FPGA2_PERIPHERAL_FREQMHZ {100} \
    CONFIG.PCW_FPGA3_PERIPHERAL_FREQMHZ {50} \
@@ -1232,12 +1477,6 @@ proc create_root_design { parentCell } {
    CONFIG.DIN_WIDTH {7} \
  ] $run
 
-  # Create instance: run_pin_monitor, and set properties
-  set run_pin_monitor [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 run_pin_monitor ]
-  set_property -dict [ list \
-   CONFIG.IN1_WIDTH {3} \
- ] $run_pin_monitor
-
   # Create instance: smartconnect_0, and set properties
   set smartconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 smartconnect_0 ]
   set_property -dict [ list \
@@ -1253,55 +1492,17 @@ proc create_root_design { parentCell } {
    CONFIG.LOGO_FILE {data/sym_orgate.png} \
  ] $util_vector_logic_0
 
+  # Create instance: write_enable_off, and set properties
+  set write_enable_off [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 write_enable_off ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+ ] $write_enable_off
+
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
   set_property -dict [ list \
    CONFIG.IN1_WIDTH {4} \
  ] $xlconcat_0
-
-  # Create instance: xlconcat_1, and set properties
-  set xlconcat_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_1 ]
-  set_property -dict [ list \
-   CONFIG.IN0_WIDTH {2} \
-   CONFIG.IN1_WIDTH {15} \
- ] $xlconcat_1
-
-  # Create instance: xlconcat_2, and set properties
-  set xlconcat_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_2 ]
-  set_property -dict [ list \
-   CONFIG.IN0_WIDTH {2} \
-   CONFIG.IN1_WIDTH {1} \
-   CONFIG.IN2_WIDTH {1} \
-   CONFIG.IN3_WIDTH {1} \
-   CONFIG.IN4_WIDTH {1} \
-   CONFIG.IN5_WIDTH {1} \
-   CONFIG.IN6_WIDTH {1} \
-   CONFIG.IN7_WIDTH {56} \
-   CONFIG.NUM_PORTS {8} \
- ] $xlconcat_2
-
-  # Create instance: xlconstant_0, and set properties
-  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {0} \
-   CONFIG.CONST_WIDTH {2} \
- ] $xlconstant_0
-
-  # Create instance: xlconstant_1, and set properties
-  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
-
-  # Create instance: xlconstant_2, and set properties
-  set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {0} \
- ] $xlconstant_2
-
-  # Create instance: xlconstant_4, and set properties
-  set xlconstant_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_4 ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {3} \
-   CONFIG.CONST_WIDTH {3} \
- ] $xlconstant_4
 
   # Create instance: xlconstant_6, and set properties
   set xlconstant_6 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_6 ]
@@ -1312,58 +1513,53 @@ proc create_root_design { parentCell } {
 
   # Create interface connections
   connect_bd_intf_net -intf_net DMA_pingpong_engine_0_RAM [get_bd_intf_pins DMA_pingpong_engine_0/RAM] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTB]
-  connect_bd_intf_net -intf_net Memory_inspector_0_BRAM_PORTA [get_bd_intf_pins Memory_inspector/BRAM_PORTA] [get_bd_intf_pins byte_to_word_ram_ada_0/IN]
   connect_bd_intf_net -intf_net PS_to_PL_M_AXIS_MM2S [get_bd_intf_pins DMA_pingpong_engine_0/S_AXIS] [get_bd_intf_pins PS_to_PL/M_AXIS_MM2S]
   connect_bd_intf_net -intf_net PS_to_PL_M_AXI_MM2S [get_bd_intf_pins PS_to_PL/M_AXI_MM2S] [get_bd_intf_pins smartconnect_0/S00_AXI]
-  connect_bd_intf_net -intf_net byte_to_word_ram_ada_0_OUT [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA] [get_bd_intf_pins byte_to_word_ram_ada_0/OUT]
   connect_bd_intf_net -intf_net processing_system7_0_DDR [get_bd_intf_ports DDR] [get_bd_intf_pins processing_system7_0/DDR]
   connect_bd_intf_net -intf_net processing_system7_0_FIXED_IO [get_bd_intf_ports FIXED_IO] [get_bd_intf_pins processing_system7_0/FIXED_IO]
   connect_bd_intf_net -intf_net processing_system7_0_M_AXI_GP0 [get_bd_intf_pins processing_system7_0/M_AXI_GP0] [get_bd_intf_pins ps7_0_axi_periph/S00_AXI]
   connect_bd_intf_net -intf_net ps7_0_axi_periph_M00_AXI [get_bd_intf_pins PS_to_PL/S_AXI_LITE] [get_bd_intf_pins ps7_0_axi_periph/M00_AXI]
   connect_bd_intf_net -intf_net ps7_0_axi_periph_M01_AXI [get_bd_intf_pins axi_intc_0/s_axi] [get_bd_intf_pins ps7_0_axi_periph/M01_AXI]
   connect_bd_intf_net -intf_net ps7_0_axi_periph_M02_AXI [get_bd_intf_pins num_words/S00_AXI] [get_bd_intf_pins ps7_0_axi_periph/M02_AXI]
-  connect_bd_intf_net -intf_net ps7_0_axi_periph_M03_AXI [get_bd_intf_pins Memory_inspector/S_AXI] [get_bd_intf_pins ps7_0_axi_periph/M03_AXI]
   connect_bd_intf_net -intf_net smartconnect_0_M00_AXI [get_bd_intf_pins processing_system7_0/S_AXI_HP0] [get_bd_intf_pins smartconnect_0/M00_AXI]
   connect_bd_intf_net -intf_net smartconnect_0_M01_AXI [get_bd_intf_pins processing_system7_0/S_AXI_HP1] [get_bd_intf_pins smartconnect_0/M01_AXI]
 
   # Create port connections
-  connect_bd_net -net DMA_pingpong_engine_0_bank_mon [get_bd_pins DMA_pingpong_engine_0/bank_mon] [get_bd_pins xlconcat_2/In1]
-  connect_bd_net -net DMA_pingpong_engine_0_clk_mon [get_bd_pins DMA_pingpong_engine_0/clk_mon] [get_bd_pins xlconcat_2/In3]
-  connect_bd_net -net DMA_pingpong_engine_0_end_of_stream_mon [get_bd_pins DMA_pingpong_engine_0/end_of_stream_mon] [get_bd_pins xlconcat_2/In6]
-  connect_bd_net -net DMA_pingpong_engine_0_reset_mon [get_bd_pins DMA_pingpong_engine_0/reset_mon] [get_bd_pins xlconcat_2/In5]
-  connect_bd_net -net DMA_pingpong_engine_0_start_pyncmaster [get_bd_pins DMA_pingpong_engine_0/start_pyncmaster] [get_bd_pins decoder_wrapper_0/run]
-  connect_bd_net -net DMA_pingpong_engine_0_status_mon [get_bd_pins DMA_pingpong_engine_0/status_mon] [get_bd_pins xlconcat_2/In0]
-  connect_bd_net -net DMA_pingpong_engine_0_tready_mon [get_bd_pins DMA_pingpong_engine_0/tready_mon] [get_bd_pins xlconcat_2/In2]
-  connect_bd_net -net DMA_pingpong_engine_0_tvalid_mon [get_bd_pins DMA_pingpong_engine_0/tvalid_mon] [get_bd_pins xlconcat_2/In4]
-  connect_bd_net -net Op1_0_1 [get_bd_ports Trigger] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net DMA_pingpong_engine_0_start_pyncmaster [get_bd_pins Blocks_for_debug/In4] [get_bd_pins DMA_pingpong_engine_0/start_pyncmaster] [get_bd_pins decoder_wrapper_0/run]
+  connect_bd_net -net DMA_pingpong_engine_0_tready [get_bd_pins Blocks_for_debug/In6] [get_bd_pins DMA_pingpong_engine_0/tready]
+  connect_bd_net -net DMA_pingpong_engine_0_tvalid [get_bd_pins Blocks_for_debug/In5] [get_bd_pins DMA_pingpong_engine_0/tvalid]
+  connect_bd_net -net LED_IS_ON_dout [get_bd_pins Blocks_for_debug/In3] [get_bd_pins LED_IS_ON/dout]
   connect_bd_net -net PS_to_PL_mm2s_introut [get_bd_pins PS_to_PL/mm2s_introut] [get_bd_pins axi_intc_0/intr]
+  connect_bd_net -net Trigger_1 [get_bd_ports Trigger] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net axi_intc_0_irq [get_bd_pins axi_intc_0/irq] [get_bd_pins processing_system7_0/IRQ_F2P]
+  connect_bd_net -net blk_mem_gen_0_douta [get_bd_pins blk_mem_gen_0/douta] [get_bd_pins decoder_wrapper_0/mem_input]
   connect_bd_net -net clk_pin_Dout [get_bd_pins clk_pin/Dout] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net decoder_wrapper_0_mem_addr [get_bd_pins decoder_wrapper_0/mem_addr] [get_bd_pins xlconcat_1/In1]
+  connect_bd_net -net clk_wiz_0_clk_out2 [get_bd_pins Blocks_for_debug/In1] [get_bd_pins blk_mem_gen_0/clka] [get_bd_pins clk_wiz_0/clk_out2] [get_bd_pins clock_domain_bridge_0/clk_a] [get_bd_pins decoder_wrapper_0/clk]
+  connect_bd_net -net clock_domain_bridge_0_b [get_bd_pins DMA_pingpong_engine_0/instruction_monitor] [get_bd_pins clock_domain_bridge_0/b]
+  connect_bd_net -net decoder_wrapper_0_channels [get_bd_ports channels] [get_bd_pins Blocks_for_debug/channels] [get_bd_pins decoder_wrapper_0/channels]
+  connect_bd_net -net decoder_wrapper_0_mem_addr [get_bd_pins Blocks_for_debug/Din] [get_bd_pins blk_mem_gen_0/addra] [get_bd_pins clock_domain_bridge_0/a] [get_bd_pins decoder_wrapper_0/mem_addr]
+  connect_bd_net -net decoder_wrapper_0_start_monitor [get_bd_pins Blocks_for_debug/In7] [get_bd_pins decoder_wrapper_0/start_monitor]
   connect_bd_net -net decoder_wrapper_0_status [get_bd_pins decoder_wrapper_0/status] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net num_words_reg0 [get_bd_pins DMA_pingpong_engine_0/num_words] [get_bd_pins num_words/reg0]
-  connect_bd_net -net num_words_reg1 [get_bd_pins DMA_pingpong_engine_0/instruction_monitor] [get_bd_pins num_words/reg1]
-  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins DMA_pingpong_engine_0/S_AXIS_ACLK] [get_bd_pins Memory_inspector/s_axi_aclk] [get_bd_pins PS_to_PL/m_axi_mm2s_aclk] [get_bd_pins PS_to_PL/s_axi_lite_aclk] [get_bd_pins axi_intc_0/s_axi_aclk] [get_bd_pins num_words/s00_axi_aclk] [get_bd_pins processing_system7_0/FCLK_CLK0] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins ps7_0_axi_periph/ACLK] [get_bd_pins ps7_0_axi_periph/M00_ACLK] [get_bd_pins ps7_0_axi_periph/M01_ACLK] [get_bd_pins ps7_0_axi_periph/M02_ACLK] [get_bd_pins ps7_0_axi_periph/M03_ACLK] [get_bd_pins ps7_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps7_0_102M/slowest_sync_clk] [get_bd_pins smartconnect_0/aclk]
-  connect_bd_net -net processing_system7_0_FCLK_CLK2 [get_bd_ports test] [get_bd_pins decoder_wrapper_0/clk] [get_bd_pins processing_system7_0/FCLK_CLK2]
+  connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_ports test] [get_bd_pins Blocks_for_debug/test] [get_bd_pins DMA_pingpong_engine_0/S_AXIS_ACLK] [get_bd_pins PS_to_PL/m_axi_mm2s_aclk] [get_bd_pins PS_to_PL/s_axi_lite_aclk] [get_bd_pins axi_intc_0/s_axi_aclk] [get_bd_pins clk_wiz_0/clk_out1] [get_bd_pins clock_domain_bridge_0/clk_b] [get_bd_pins num_words/s00_axi_aclk] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP1_ACLK] [get_bd_pins ps7_0_axi_periph/ACLK] [get_bd_pins ps7_0_axi_periph/M00_ACLK] [get_bd_pins ps7_0_axi_periph/M01_ACLK] [get_bd_pins ps7_0_axi_periph/M02_ACLK] [get_bd_pins ps7_0_axi_periph/M03_ACLK] [get_bd_pins ps7_0_axi_periph/S00_ACLK] [get_bd_pins rst_ps7_0_102M/slowest_sync_clk] [get_bd_pins smartconnect_0/aclk]
+  connect_bd_net -net processing_system7_0_FCLK_CLK1 [get_bd_pins clk_wiz_0/clk_in1] [get_bd_pins processing_system7_0/FCLK_CLK0]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins processing_system7_0/FCLK_RESET0_N] [get_bd_pins rst_ps7_0_102M/ext_reset_in]
   connect_bd_net -net processing_system7_0_GPIO_O [get_bd_pins clk_pin/Din] [get_bd_pins processing_system7_0/GPIO_O] [get_bd_pins reset_pin/Din] [get_bd_pins run/Din]
   connect_bd_net -net reset_pin_Dout [get_bd_pins decoder_wrapper_0/reset] [get_bd_pins reset_pin/Dout]
-  connect_bd_net -net rst_ps7_0_102M_peripheral_aresetn [get_bd_pins DMA_pingpong_engine_0/S_AXIS_ARESETN] [get_bd_pins Memory_inspector/s_axi_aresetn] [get_bd_pins PS_to_PL/axi_resetn] [get_bd_pins axi_intc_0/s_axi_aresetn] [get_bd_pins num_words/s00_axi_aresetn] [get_bd_pins ps7_0_axi_periph/ARESETN] [get_bd_pins ps7_0_axi_periph/M00_ARESETN] [get_bd_pins ps7_0_axi_periph/M01_ARESETN] [get_bd_pins ps7_0_axi_periph/M02_ARESETN] [get_bd_pins ps7_0_axi_periph/M03_ARESETN] [get_bd_pins ps7_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps7_0_102M/peripheral_aresetn] [get_bd_pins smartconnect_0/aresetn]
-  connect_bd_net -net run_Dout [get_bd_pins run/Dout] [get_bd_pins run_pin_monitor/In0]
-  connect_bd_net -net run_pin_monitor_dout [get_bd_ports run_monitor] [get_bd_pins run_pin_monitor/dout]
+  connect_bd_net -net rst_ps7_0_102M_peripheral_aresetn [get_bd_pins DMA_pingpong_engine_0/S_AXIS_ARESETN] [get_bd_pins PS_to_PL/axi_resetn] [get_bd_pins axi_intc_0/s_axi_aresetn] [get_bd_pins num_words/s00_axi_aresetn] [get_bd_pins ps7_0_axi_periph/ARESETN] [get_bd_pins ps7_0_axi_periph/M00_ARESETN] [get_bd_pins ps7_0_axi_periph/M01_ARESETN] [get_bd_pins ps7_0_axi_periph/M02_ARESETN] [get_bd_pins ps7_0_axi_periph/M03_ARESETN] [get_bd_pins ps7_0_axi_periph/S00_ARESETN] [get_bd_pins rst_ps7_0_102M/peripheral_aresetn] [get_bd_pins smartconnect_0/aresetn]
+  connect_bd_net -net run_Dout [get_bd_pins Blocks_for_debug/In0] [get_bd_pins run/Dout]
+  connect_bd_net -net run_pin_monitor_dout [get_bd_ports run_monitor] [get_bd_pins Blocks_for_debug/run_monitor]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins decoder_wrapper_0/trigger] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins processing_system7_0/GPIO_I] [get_bd_pins xlconcat_0/dout]
-  connect_bd_net -net xlconcat_2_dout [get_bd_ports channels] [get_bd_pins xlconcat_2/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins xlconcat_1/In0] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_1_dout [get_bd_pins Clock_reset/dout] [get_bd_pins clk_wiz_0/reset]
+  connect_bd_net -net xlconstant_1_dout1 [get_bd_pins blk_mem_gen_0/wea] [get_bd_pins write_enable_off/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_ports ENABLE] [get_bd_pins ENABLE/dout]
-  connect_bd_net -net xlconstant_4_dout [get_bd_pins run_pin_monitor/In1] [get_bd_pins xlconstant_4/dout]
   connect_bd_net -net xlconstant_6_dout [get_bd_pins xlconcat_0/In0] [get_bd_pins xlconstant_6/dout]
 
   # Create address segments
   create_bd_addr_seg -range 0x20000000 -offset 0x00000000 [get_bd_addr_spaces PS_to_PL/Data_MM2S] [get_bd_addr_segs processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM] SEG_processing_system7_0_HP0_DDR_LOWOCM
   create_bd_addr_seg -range 0x20000000 -offset 0x20000000 [get_bd_addr_spaces PS_to_PL/Data_MM2S] [get_bd_addr_segs processing_system7_0/S_AXI_HP1/HP1_DDR_LOWOCM] SEG_processing_system7_0_HP1_DDR_LOWOCM
   create_bd_addr_seg -range 0x00010000 -offset 0x40410000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs PS_to_PL/S_AXI_LITE/Reg] SEG_PS_to_PL_Reg
-  create_bd_addr_seg -range 0x00080000 -offset 0x40000000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs Memory_inspector/S_AXI/Mem0] SEG_axi_bram_ctrl_0_Mem0
   create_bd_addr_seg -range 0x00010000 -offset 0x41800000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs axi_intc_0/S_AXI/Reg] SEG_axi_intc_0_Reg
   create_bd_addr_seg -range 0x00010000 -offset 0x43C00000 [get_bd_addr_spaces processing_system7_0/Data] [get_bd_addr_segs num_words/S00_AXI/S00_AXI_reg] SEG_num_words_S00_AXI_reg
 
