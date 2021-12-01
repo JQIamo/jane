@@ -31,7 +31,8 @@ module decoder(
     time_arg, // input
     channels, // output
     status, // output
-    mem_addr // output
+    mem_addr, // output
+    start_monitor //output
     );
 
 parameter ADDR_SIZE = 16;
@@ -46,6 +47,7 @@ input [31:0] time_arg;
 output reg [63:0] channels = 0;
 output reg [3:0] status;
 output reg [ADDR_SIZE-1:0] mem_addr = 0;
+output start_monitor;
 reg [63:0] chn_prefetch = 0;
 reg [ADDR_SIZE-1:0] next_addr;
 reg [51:0] count = 0;
@@ -60,6 +62,7 @@ reg trigger_registered = 1'b0;
 wire [51:0] next_delay;
 wire start;
 
+assign start_monitor = start;
 
 //    parameter CONT = 4'd0;
 //    parameter STOP = 4'd1;
@@ -302,8 +305,8 @@ begin
     endcase
 end
 
-//assign next_delay = (op_code_tbl[op_code] == LONG_DELAY) ? data * time_arg : {20'd0,time_arg};
-assign next_delay = time_arg;
+assign next_delay = (op_code_tbl[op_code] == LONG_DELAY) ? data * time_arg : {20'd0,time_arg};
+//assign next_delay = time_arg;
 
 start_shortener shortener(
     .clk(clk),

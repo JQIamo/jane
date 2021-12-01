@@ -32,7 +32,8 @@ module decoder_wrapper(
 //    time_arg, // input
     channels, // output
     status, // output
-    mem_addr // output 
+    mem_addr, // output
+    start_monitor //output
     );
     
 parameter ADDR_SIZE = 15;
@@ -48,6 +49,7 @@ input [119:0] mem_input;
 output [63:0] channels;
 output [3:0] status;
 output [ADDR_SIZE-1:0] mem_addr;
+output start_monitor;
 
 
 
@@ -63,7 +65,8 @@ decoder #(.ADDR_SIZE(ADDR_SIZE)) inst (
     .time_arg(mem_input [31:0]), // input
     .channels(channels), // output
     .status(status), // output
-    .mem_addr(mem_addr) // output 
+    .mem_addr(mem_addr), // output
+    .start_monitor(start_monitor) 
     );
 
 
