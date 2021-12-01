@@ -114,18 +114,19 @@ module DMAcomm_v1_0S00_AXIS_tb;
   
   DMA_pingpong_engine
 	#(
-      .BRAM_DEPTH(BRAM_DEPTH),
-      .BRAM_WIDTH(BRAM_WIDTH),
+	    
+        //How many words (with size BRAM_WIDTH) for one instruction?
+       .WORDS_IN_INSTRUCTION(4),
+		// AXI4Stream sink: Data Width
+      .ADDR_WIDTH(ADDR_MONITOR_WIDTH),
       .ADDR_MONITOR_WIDTH(ADDR_MONITOR_WIDTH),
-      .C_S_AXIS_TDATA_WIDTH(C_S_AXIS_TDATA_WIDTH),
-      .LOW_BANK_LIMIT(LOW_BANK_LIMIT),
-      .HIGH_BANK_LIMIT(HIGH_BANK_LIMIT)
+      .C_S_AXIS_TDATA_WIDTH(C_S_AXIS_TDATA_WIDTH)
 
     )
     my_worker
 	(
       .num_words(num_words),
-      .addr_monitor(addr_source),
+      .instruction_monitor(addr_source),
       .start_pyncmaster(start_pyncmaster),
       .S_AXIS_ACLK(M_AXIS_ACLK),
       .S_AXIS_ARESETN(M_AXIS_ARESETN),
