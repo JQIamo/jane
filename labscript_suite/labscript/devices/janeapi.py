@@ -19,7 +19,7 @@ SERVER_PORT = 6750
 
 #import imp
 from labscript.devices.jane_client.jane_client import LINK
-#from pynqcom import pynqcom
+
 import logging
 #import time
 import numpy as np
@@ -36,7 +36,7 @@ def _check():
     except NameError:
         logging.debug("Creating _jane_link")
         _jane_link = LINK(server_ip_address = SERVER_IP_ADDRESS, server_port = SERVER_PORT)
-        _jane_link.addr_range = 524288
+        _jane_link.addr_range = 524288//2
         _jane_link.program = [np.array(np.zeros([_jane_link.addr_range//16,4]),dtype = np.uint32)]
         _jane_link.current_addr = 0
         _jane_link.current_bank = 0

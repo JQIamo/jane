@@ -36,13 +36,13 @@ class Jane(PulseBlaster_No_DDS):
         super(Jane, self).__init__(*args,**kwargs) #It was PulseBlaster_No_DDS
         self.programming_scheme = 'pb_stop_programming/STOP'
         self.max_instructions = 8192000
-        self.min_ticks_in_frame = 65536 # 4 32-bit words for each instruction
+        self.min_ticks_in_frame = 65536//2 # 4 32-bit words for each instruction
                                         # Total size of a frame is 16k trerefore
                                         # total number of ticks is 4*16k = 64k
         self.dma_clock = 100 #MHz
         self.safety_margin = 1.05 * self.core_clock_freq/self.dma_clock       # More than 1, depends on ratio between clock
                                                                               # rate of state machine and the DMA clock
-        self.framelength = 16384        #2^14 = 16384
+        self.framelength = 16384//2        #2^14 = 16384
         #Hack from desperation:
         # self.description = 'Jane'
         # self.clock_limit = 100e6 # can probably go faster (8.3e6 is the default)

@@ -50,7 +50,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-   create_project project_1 myproj -part xc7z020clg400-1
+   create_project project_1 myproj -part xc7z010clg400-1
 }
 
 
@@ -235,7 +235,7 @@ proc create_hier_cell_Multi_splicer { parentCell nameHier } {
   # Create interface pins
 
   # Create pins
-  create_bd_pin -dir I -from 14 -to 0 Din
+  create_bd_pin -dir I -from 13 -to 0 Din
   create_bd_pin -dir O -from 0 -to 0 Dout
   create_bd_pin -dir O -from 0 -to 0 Dout1
   create_bd_pin -dir O -from 0 -to 0 Dout2
@@ -313,7 +313,7 @@ proc create_hier_cell_Blocks_for_debug { parentCell nameHier } {
   # Create interface pins
 
   # Create pins
-  create_bd_pin -dir I -from 14 -to 0 Din
+  create_bd_pin -dir I -from 13 -to 0 Din
   create_bd_pin -dir I -from 0 -to 0 In0
   create_bd_pin -dir I -from 0 -to 0 In1
   create_bd_pin -dir I -from 0 -to 0 In3
@@ -437,7 +437,10 @@ proc create_root_design { parentCell } {
      catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.ADDR_WIDTH {16} \
+ ] $DMA_pingpong_engine_0
+
   # Create instance: ENABLE, and set properties
   set ENABLE [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 ENABLE ]
   set_property -dict [ list \
@@ -479,7 +482,7 @@ proc create_root_design { parentCell } {
    CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
    CONFIG.Use_Byte_Write_Enable {false} \
    CONFIG.Use_RSTA_Pin {false} \
-   CONFIG.Write_Depth_A {32768} \
+   CONFIG.Write_Depth_A {16384} \
    CONFIG.Write_Width_A {128} \
    CONFIG.Write_Width_B {32} \
    CONFIG.use_bram_block {Stand_Alone} \
@@ -560,7 +563,7 @@ proc create_root_design { parentCell } {
      return 1
    }
     set_property -dict [ list \
-   CONFIG.DATA_WIDTH {15} \
+   CONFIG.DATA_WIDTH {14} \
  ] $clock_domain_bridge_0
 
   # Create instance: decoder_wrapper_0, and set properties
@@ -573,7 +576,10 @@ proc create_root_design { parentCell } {
      catch {common::send_msg_id "BD_TCL-106" "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
      return 1
    }
-  
+    set_property -dict [ list \
+   CONFIG.ADDR_SIZE {14} \
+ ] $decoder_wrapper_0
+
   # Create instance: num_words, and set properties
   set num_words [ create_bd_cell -type ip -vlnv user.org:user:register:1.0 num_words ]
 
