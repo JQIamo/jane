@@ -7,7 +7,7 @@ set tcl_config "[file normalize "$source_dir/util"]"
 
 
 #Set configuration
-set project_part            xc7z020clg400-1
+set project_part            xc7z010clg400-1
 set board_part              ""
 set board_id                zcu104
 set block_diagram_script    "system.tcl"
