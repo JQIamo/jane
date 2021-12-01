@@ -74,8 +74,8 @@ def print_program_line(program, n):
 def receive_program(connection):
     #print("STOP:{}".format(status_pins[0].read()))
     #print("RESET:{}".format(status_pins[1].read()))
-    #print("WAIT:{}".format(status_pins[2].read()))
-    #print("RUN:{}".format(status_pins[3].read()))
+    #print("RUN:{}".format(status_pins[2].read()))
+    #print("WAIT:{}".format(status_pins[3].read()))
 
     #Receiving data size as 4 bytes to firm a 32 bit number
     data_size = np.array(0,dtype=np.uint32)
